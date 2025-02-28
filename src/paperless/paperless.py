@@ -4,6 +4,7 @@ import deploy_base.opnsense.unbound
 import deploy_base.opnsense.unbound.host_override
 import pulumi as p
 import pulumi_kubernetes as k8s
+import pulumi_random as random
 
 from paperless.config import ComponentConfig
 
@@ -18,6 +19,11 @@ class Paperless(p.ComponentResource):
         k8s_provider: k8s.Provider,
     ):
         super().__init__('paperless', 'paperless')
+
+        admin_username = 'admin'
+        admin_password = random.RandomPassword('admin-password', length=32, special=False).result
+        p.export('admin_username', admin_username)
+        p.export('admin_password', admin_password)
 
         namespace = k8s.core.v1.Namespace(
             'paperless-namespace',
@@ -86,7 +92,26 @@ class Paperless(p.ComponentResource):
             # Extend the polling delay to account for HP bitch iteratively updating its PDFs after
             # scanning each page.
             'PAPERLESS_CONSUMER_POLLING_DELAY': '30',
+            # Wait up to 10min for the scan to finish
+            'PAPERLESS_CONSUMER_POLLING_RETRY_COUNT': '20',
+            # TODO: Switch to TLS
+            'PAPERLESS_URL': f'http://paperless.{component_config.cloudflare.zone}:{PAPERLESS_PORT}',
+            # https://docs.paperless-ngx.com/troubleshooting/#gunicorn-fails-to-start-with-is-not-a-valid-port-number
+            'PAPERLESS_PORT': str(PAPERLESS_PORT),
+            'PAPERLESS_ADMIN_USER': admin_username,
+            'PAPERLESS_OCR_LANGUAGE': 'deu+eng',
         }
+
+        config_secret = k8s.core.v1.Secret(
+            'paperless-config',
+            string_data={
+                'PAPERLESS_SECRET_KEY': random.RandomPassword(
+                    'paperless-secret-key', length=64, special=False
+                ).result,
+                'PAPERLESS_ADMIN_PASSWORD': admin_password,
+            },
+            opts=k8s_opts,
+        )
 
         app_labels = {'app': 'paperless'}
         sts = k8s.apps.v1.StatefulSet(
@@ -105,6 +130,13 @@ class Paperless(p.ComponentResource):
                                 'image': f'ghcr.io/paperless-ngx/paperless-ngx:{component_config.paperless.version}',
                                 'env': [
                                     *[{'name': k, 'value': v} for k, v in env_vars.items()],
+                                ],
+                                'env_from': [
+                                    {
+                                        'secret_ref': {
+                                            'name': config_secret.metadata.name,
+                                        },
+                                    },
                                 ],
                                 'ports': [{'container_port': PAPERLESS_PORT}],
                                 'volume_mounts': [
