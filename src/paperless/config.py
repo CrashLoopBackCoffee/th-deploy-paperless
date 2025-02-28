@@ -1,6 +1,7 @@
 import pathlib
 
 import deploy_base.model
+import pydantic
 
 REPO_PREFIX = 'deploy-'
 
@@ -16,9 +17,39 @@ def get_pulumi_project():
     return repo_dir.name[len(REPO_PREFIX) :]
 
 
+class PulumiSecret(deploy_base.model.LocalBaseModel):
+    secure: pydantic.SecretStr
+
+    def __str__(self):
+        return str(self.secure)
+
+
+class EntraIdConfig(deploy_base.model.LocalBaseModel):
+    tenant_id: str = 'ac1df362-04cf-4e6e-839b-031c16ada473'
+    client_id: str | PulumiSecret
+    client_secret: str
+
+
+class RedisConfig(deploy_base.model.LocalBaseModel):
+    version: str
+
+
+class PaperlessConfig(deploy_base.model.LocalBaseModel):
+    version: str
+
+    consume_server: str = pydantic.Field(alias='consume-server')
+    consume_share: str = pydantic.Field(alias='consume-share')
+    consume_mount_options: str = pydantic.Field(
+        alias='consume-mount-options', default='nfsvers=4.1,sec=sys'
+    )
+
+
 class ComponentConfig(deploy_base.model.LocalBaseModel):
     kubeconfig: deploy_base.model.OnePasswordRef
-    cloudflare: deploy_base.model.CloudflareConfig | None = None
+    cloudflare: deploy_base.model.CloudflareConfig
+    paperless: PaperlessConfig
+    redis: RedisConfig
+    entraid: EntraIdConfig
 
 
 class StackConfig(deploy_base.model.LocalBaseModel):
@@ -27,5 +58,4 @@ class StackConfig(deploy_base.model.LocalBaseModel):
 
 
 class PulumiConfigRoot(deploy_base.model.LocalBaseModel):
-    encryptionsalt: str | None
     config: StackConfig
