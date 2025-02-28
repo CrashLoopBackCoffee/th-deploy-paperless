@@ -137,6 +137,32 @@ class Paperless(p.ComponentResource):
                 'PAPERLESS_ADMIN_PASSWORD': admin_password,
                 'PAPERLESS_SOCIALACCOUNT_PROVIDERS': p.Output.json_dumps(
                     {
+                        'google': {
+                            'APPS': [
+                                {
+                                    'client_id': component_config.google.client_id,
+                                    'secret': component_config.google.client_secret,
+                                    'key': '',
+                                    'settings': {
+                                        # You can fine tune these settings per app:
+                                        'scope': [
+                                            'profile',
+                                            'email',
+                                        ],
+                                        'auth_params': {
+                                            'access_type': 'online',
+                                        },
+                                    },
+                                },
+                            ],
+                            'SCOPE': [
+                                'profile',
+                                'email',
+                            ],
+                            'AUTH_PARAMS': {
+                                'access_type': 'online',
+                            },
+                        },
                         'openid_connect': {
                             'APPS': [
                                 {
@@ -171,7 +197,7 @@ class Paperless(p.ComponentResource):
                                     },
                                 }
                             ]
-                        }
+                        },
                     }
                 ),
                 'PAPERLESS_DBPASS': postgres_password.result,
