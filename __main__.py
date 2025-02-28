@@ -9,4 +9,15 @@ component_config = ComponentConfig.model_validate(config.get_object('config'))
 
 k8s_provider = k8s.Provider('k8s', kubeconfig=component_config.kubeconfig.value)
 
-Paperless(component_config, k8s_provider)
+namespace = k8s.core.v1.Namespace(
+    'paperless-namespace',
+    metadata=k8s.meta.v1.ObjectMetaArgs(
+        name='paperless',
+    ),
+    opts=p.ResourceOptions(
+        provider=k8s_provider,
+    ),
+)
+
+
+Paperless(component_config, namespace.metadata.name, k8s_provider)

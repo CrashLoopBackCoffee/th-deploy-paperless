@@ -13,6 +13,7 @@ class Paperless(p.ComponentResource):
     def __init__(
         self,
         component_config: ComponentConfig,
+        namespace: p.Input[str],
         k8s_provider: k8s.Provider,
     ):
         super().__init__('paperless', 'paperless')
@@ -22,21 +23,10 @@ class Paperless(p.ComponentResource):
         p.export('admin_username', admin_username)
         p.export('admin_password', admin_password)
 
-        namespace = k8s.core.v1.Namespace(
-            'paperless-namespace',
-            metadata=k8s.meta.v1.ObjectMetaArgs(
-                name='paperless',
-            ),
-            opts=p.ResourceOptions(
-                parent=self,
-                provider=k8s_provider,
-            ),
-        )
-
         namespaced_provider = k8s.Provider(
             'paperless-provider',
             kubeconfig=k8s_provider.kubeconfig,  # type: ignore
-            namespace=namespace.metadata['name'],
+            namespace=namespace,
         )
 
         k8s_opts = p.ResourceOptions(
