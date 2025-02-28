@@ -26,8 +26,13 @@ class PulumiSecret(deploy_base.model.LocalBaseModel):
 
 class EntraIdConfig(deploy_base.model.LocalBaseModel):
     tenant_id: str = 'ac1df362-04cf-4e6e-839b-031c16ada473'
-    client_id: str | PulumiSecret
-    client_secret: str
+    client_id: str
+    client_secret: str | PulumiSecret
+
+
+class GoogleConfig(deploy_base.model.LocalBaseModel):
+    client_id: str
+    client_secret: str | PulumiSecret
 
 
 class RedisConfig(deploy_base.model.LocalBaseModel):
@@ -54,6 +59,7 @@ class ComponentConfig(deploy_base.model.LocalBaseModel):
     paperless: PaperlessConfig
     redis: RedisConfig
     entraid: EntraIdConfig
+    google: GoogleConfig
     postgres: PostgresConfig
 
 
