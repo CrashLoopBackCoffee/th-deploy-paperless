@@ -1,6 +1,7 @@
 import deploy_base.opnsense.unbound.host_override
 import pulumi as p
 import pulumi_kubernetes as k8s
+import pulumi_postgresql as postgresql
 import pulumi_random as random
 
 from paperless.config import ComponentConfig
@@ -15,8 +16,32 @@ class Paperless(p.ComponentResource):
         component_config: ComponentConfig,
         namespace: p.Input[str],
         k8s_provider: k8s.Provider,
+        postgres_provider: postgresql.Provider,
+        postgres_service: p.Input[str],
+        postgres_port: p.Input[int],
     ):
         super().__init__('paperless', 'paperless')
+
+        # Configure database
+        postgres_opts = p.ResourceOptions(provider=postgres_provider)
+        postgres_password = random.RandomPassword(
+            'synapse-password',
+            length=24,
+        )
+        postgres_user = postgresql.Role(
+            'synapse',
+            login=True,
+            password=postgres_password.result,
+            opts=postgres_opts,
+        )
+        database = postgresql.Database(
+            'synapse',
+            encoding='UTF8',
+            lc_collate='C',
+            lc_ctype='C',
+            owner=postgres_user.name,
+            opts=postgres_opts,
+        )
 
         admin_username = 'admin'
         admin_password = random.RandomPassword('admin-password', length=32, special=False).result
@@ -96,6 +121,11 @@ class Paperless(p.ComponentResource):
             ),
             'PAPERLESS_ACCOUNT_EMAIL_VERIFICATION': 'none',
             'PAPERLESS_OIDC_DEFAULT_GROUP': 'readers',
+            'PAPERLESS_DBENGINE': 'postgresql',
+            'PAPERLESS_DBHOST': postgres_service,
+            'PAPERLESS_DBPORT': p.Output.from_input(postgres_port).apply(lambda port: str(port)),
+            'PAPERLESS_DBNAME': database.name,
+            'PAPERLESS_DBUSER': postgres_user.name,
         }
 
         config_secret = k8s.core.v1.Secret(
@@ -144,6 +174,7 @@ class Paperless(p.ComponentResource):
                         }
                     }
                 ),
+                'PAPERLESS_DBPASS': postgres_password.result,
             },
             opts=k8s_opts,
         )

@@ -34,6 +34,10 @@ class RedisConfig(deploy_base.model.LocalBaseModel):
     version: str
 
 
+class PostgresConfig(deploy_base.model.LocalBaseModel):
+    version: str
+
+
 class PaperlessConfig(deploy_base.model.LocalBaseModel):
     version: str
 
@@ -50,6 +54,7 @@ class ComponentConfig(deploy_base.model.LocalBaseModel):
     paperless: PaperlessConfig
     redis: RedisConfig
     entraid: EntraIdConfig
+    postgres: PostgresConfig
 
 
 class StackConfig(deploy_base.model.LocalBaseModel):

@@ -16,6 +16,9 @@ config:
       version: 2.14.6
       consume-server: synology.tobiash.net
       consume-share: /volume2/paperless
+    postgres:
+      # renovate: datasource=docker packageName=registry-1.docker.io/bitnamicharts/postgresql versioning=semver
+      version: 16.4.3
     redis:
       # renovate: datasource=github-releases packageName=redis/redis versioning=semver
       version: 7.4.1
