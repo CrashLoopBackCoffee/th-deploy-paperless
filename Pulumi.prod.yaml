@@ -18,4 +18,4 @@ config:
       consume-share: /volume2/paperless
     redis:
       # renovate: datasource=github-releases packageName=redis/redis versioning=semver
-      version: 7.4.1
+      version: 7.4.2
