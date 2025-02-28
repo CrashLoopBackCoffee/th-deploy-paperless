@@ -17,6 +17,19 @@ def get_pulumi_project():
     return repo_dir.name[len(REPO_PREFIX) :]
 
 
+class PulumiSecret(deploy_base.model.LocalBaseModel):
+    secure: pydantic.SecretStr
+
+    def __str__(self):
+        return str(self.secure)
+
+
+class EntraIdConfig(deploy_base.model.LocalBaseModel):
+    tenant_id: str = 'ac1df362-04cf-4e6e-839b-031c16ada473'
+    client_id: str | PulumiSecret
+    client_secret: str
+
+
 class RedisConfig(deploy_base.model.LocalBaseModel):
     version: str
 
@@ -36,6 +49,7 @@ class ComponentConfig(deploy_base.model.LocalBaseModel):
     cloudflare: deploy_base.model.CloudflareConfig
     paperless: PaperlessConfig
     redis: RedisConfig
+    entraid: EntraIdConfig
 
 
 class StackConfig(deploy_base.model.LocalBaseModel):
