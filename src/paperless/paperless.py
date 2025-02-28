@@ -1,6 +1,3 @@
-import deploy_base
-import deploy_base.opnsense
-import deploy_base.opnsense.unbound
 import deploy_base.opnsense.unbound.host_override
 import pulumi as p
 import pulumi_kubernetes as k8s
@@ -95,7 +92,7 @@ class Paperless(p.ComponentResource):
             # Wait up to 10min for the scan to finish
             'PAPERLESS_CONSUMER_POLLING_RETRY_COUNT': '20',
             # TODO: Switch to TLS
-            'PAPERLESS_URL': f'http://paperless.{component_config.cloudflare.zone}:{PAPERLESS_PORT}',
+            'PAPERLESS_URL': f'https://paperless.{component_config.cloudflare.zone}',
             # https://docs.paperless-ngx.com/troubleshooting/#gunicorn-fails-to-start-with-is-not-a-valid-port-number
             'PAPERLESS_PORT': str(PAPERLESS_PORT),
             'PAPERLESS_ADMIN_USER': admin_username,
@@ -199,26 +196,54 @@ class Paperless(p.ComponentResource):
             spec={
                 'ports': [{'port': PAPERLESS_PORT}],
                 'selector': sts.spec.selector.match_labels,
-                'type': 'LoadBalancer',
-                'external_traffic_policy': 'Local',
             },
             opts=k8s_opts,
         )
 
         # Create local DNS record
+        traefic_service = k8s.core.v1.Service.get(
+            'traefik-service', 'traefik/traefik', opts=k8s_opts
+        )
         record = deploy_base.opnsense.unbound.host_override.HostOverride(
             'paperless',
             host='paperless',
             domain=component_config.cloudflare.zone,
             record_type='A',
-            ipaddress=service_paperless.status.apply(
-                lambda x: x['load_balancer']['ingress'][0]['ip']  # type: ignore
-            ),
+            ipaddress=traefic_service.status.load_balancer.ingress[0].ip,
+        )
+
+        fqdn = f'paperless.{component_config.cloudflare.zone}'
+        k8s.apiextensions.CustomResource(
+            'ingress',
+            api_version='traefik.io/v1alpha1',
+            kind='IngressRoute',
+            metadata={
+                'name': 'ingress',
+            },
+            spec={
+                'entryPoints': ['websecure'],
+                'routes': [
+                    {
+                        'kind': 'Rule',
+                        'match': p.Output.concat('Host(`', fqdn, '`)'),
+                        'services': [
+                            {
+                                'name': service_paperless.metadata.name,
+                                'namespace': service_paperless.metadata.namespace,
+                                'port': PAPERLESS_PORT,
+                            },
+                        ],
+                    }
+                ],
+                # use default wildcard certificate:
+                'tls': {},
+            },
+            opts=k8s_opts,
         )
 
         p.export(
             'paperless_url',
-            p.Output.format('http://{}.{}:{}', record.host, record.domain, PAPERLESS_PORT),
+            p.Output.format('https://{}.{}', record.host, record.domain),
         )
 
         self.register_outputs({})
