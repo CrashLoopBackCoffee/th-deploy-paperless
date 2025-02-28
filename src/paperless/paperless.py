@@ -106,13 +106,12 @@ class Paperless(p.ComponentResource):
             'PAPERLESS_CONSUMER_POLLING_DELAY': '30',
             # Wait up to 10min for the scan to finish
             'PAPERLESS_CONSUMER_POLLING_RETRY_COUNT': '20',
-            # TODO: Switch to TLS
             'PAPERLESS_URL': f'https://paperless.{component_config.cloudflare.zone}',
             # https://docs.paperless-ngx.com/troubleshooting/#gunicorn-fails-to-start-with-is-not-a-valid-port-number
             'PAPERLESS_PORT': str(PAPERLESS_PORT),
             'PAPERLESS_ADMIN_USER': admin_username,
             'PAPERLESS_OCR_LANGUAGE': 'deu+eng',
-            # Authentication via google
+            # Authentication
             'PAPERLESS_APPS': ','.join(
                 (
                     'allauth.socialaccount.providers.google',
@@ -126,6 +125,8 @@ class Paperless(p.ComponentResource):
             'PAPERLESS_DBPORT': p.Output.from_input(postgres_port).apply(lambda port: str(port)),
             'PAPERLESS_DBNAME': database.name,
             'PAPERLESS_DBUSER': postgres_user.name,
+            'PAPERLESS_CONSUMER_ENABLE_BARCODES': 'true',
+            'PAPERLESS_CONSUMER_ENABLE_ASN_BARCODE': 'true',
         }
 
         config_secret = k8s.core.v1.Secret(
