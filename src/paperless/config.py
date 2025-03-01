@@ -39,6 +39,14 @@ class RedisConfig(deploy_base.model.LocalBaseModel):
     version: str
 
 
+class TikaConfig(deploy_base.model.LocalBaseModel):
+    version: str
+
+
+class GotenbergConfig(deploy_base.model.LocalBaseModel):
+    version: str
+
+
 class PostgresConfig(deploy_base.model.LocalBaseModel):
     version: str
 
@@ -61,6 +69,8 @@ class ComponentConfig(deploy_base.model.LocalBaseModel):
     entraid: EntraIdConfig
     google: GoogleConfig
     postgres: PostgresConfig
+    tika: TikaConfig
+    gotenberg: GotenbergConfig
 
 
 class StackConfig(deploy_base.model.LocalBaseModel):
