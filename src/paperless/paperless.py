@@ -59,38 +59,7 @@ class Paperless(p.ComponentResource):
             provider=namespaced_provider,
         )
 
-        app_labels_redis = {'app': 'redis'}
-        redis_sts = k8s.apps.v1.StatefulSet(
-            'redis',
-            metadata={'name': 'redis'},
-            spec={
-                'replicas': 1,
-                'selector': {'match_labels': app_labels_redis},
-                'service_name': 'redis-headless',
-                'template': {
-                    'metadata': {'labels': app_labels_redis},
-                    'spec': {
-                        'containers': [
-                            {
-                                'name': 'redis',
-                                'image': f'docker.io/library/redis:{component_config.redis.version}',
-                                'ports': [{'container_port': REDIS_PORT}],
-                            },
-                        ],
-                    },
-                },
-            },
-            opts=k8s_opts,
-        )
-        redis_service = k8s.core.v1.Service(
-            'redis',
-            metadata={'name': 'redis'},
-            spec={
-                'ports': [{'port': REDIS_PORT}],
-                'selector': redis_sts.spec.selector.match_labels,
-            },
-            opts=k8s_opts,
-        )
+        redis_service = create_redis(component_config, k8s_opts)
 
         env_vars = {
             'PAPERLESS_REDIS': p.Output.format(
@@ -343,3 +312,38 @@ class Paperless(p.ComponentResource):
         )
 
         self.register_outputs({})
+
+
+def create_redis(component_config: ComponentConfig, opts: p.ResourceOptions) -> k8s.core.v1.Service:
+    app_labels_redis = {'app': 'redis'}
+    redis_sts = k8s.apps.v1.StatefulSet(
+        'redis',
+        metadata={'name': 'redis'},
+        spec={
+            'replicas': 1,
+            'selector': {'match_labels': app_labels_redis},
+            'service_name': 'redis-headless',
+            'template': {
+                'metadata': {'labels': app_labels_redis},
+                'spec': {
+                    'containers': [
+                        {
+                            'name': 'redis',
+                            'image': f'docker.io/library/redis:{component_config.redis.version}',
+                            'ports': [{'container_port': REDIS_PORT}],
+                        },
+                    ],
+                },
+            },
+        },
+        opts=opts,
+    )
+    return k8s.core.v1.Service(
+        'redis',
+        metadata={'name': 'redis'},
+        spec={
+            'ports': [{'port': REDIS_PORT}],
+            'selector': redis_sts.spec.selector.match_labels,
+        },
+        opts=opts,
+    )
