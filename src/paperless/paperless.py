@@ -8,6 +8,8 @@ from paperless.config import ComponentConfig
 
 REDIS_PORT = 6379
 PAPERLESS_PORT = 8000
+TIKA_PORT = 9998
+GOTENBERG_PORT = 3000
 
 
 class Paperless(p.ComponentResource):
@@ -60,6 +62,8 @@ class Paperless(p.ComponentResource):
         )
 
         redis_service = create_redis(component_config, k8s_opts)
+        tika_service = create_tika(component_config, k8s_opts)
+        gotenberg_service = create_gotenberg(component_config, k8s_opts)
 
         env_vars = {
             'PAPERLESS_REDIS': p.Output.format(
@@ -96,6 +100,13 @@ class Paperless(p.ComponentResource):
             'PAPERLESS_DBUSER': postgres_user.name,
             'PAPERLESS_CONSUMER_ENABLE_BARCODES': 'true',
             'PAPERLESS_CONSUMER_ENABLE_ASN_BARCODE': 'true',
+            'PAPERLESS_TIKA_ENABLED': 'true',
+            'PAPERLESS_TIKA_ENDPOINT': p.Output.format(
+                'http://{}:{}', tika_service.metadata.name, TIKA_PORT
+            ),
+            'PAPERLESS_TIKA_GOTENBERG_ENDPOINT': p.Output.format(
+                'http://{}:{}', gotenberg_service.metadata.name, GOTENBERG_PORT
+            ),
         }
 
         config_secret = k8s.core.v1.Secret(
@@ -344,6 +355,83 @@ def create_redis(component_config: ComponentConfig, opts: p.ResourceOptions) -> 
         spec={
             'ports': [{'port': REDIS_PORT}],
             'selector': redis_sts.spec.selector.match_labels,
+        },
+        opts=opts,
+    )
+
+
+def create_tika(component_config: ComponentConfig, opts: p.ResourceOptions) -> k8s.core.v1.Service:
+    app_labels_tika = {'app': 'tika'}
+    tika_sts = k8s.apps.v1.Deployment(
+        'tika',
+        metadata={'name': 'tika'},
+        spec={
+            'replicas': 1,
+            'selector': {'match_labels': app_labels_tika},
+            'template': {
+                'metadata': {'labels': app_labels_tika},
+                'spec': {
+                    'containers': [
+                        {
+                            'name': 'tika',
+                            'image': f'docker.io/apache/tika:{component_config.tika.version}',
+                            'ports': [{'container_port': TIKA_PORT}],
+                        },
+                    ],
+                },
+            },
+        },
+        opts=opts,
+    )
+    return k8s.core.v1.Service(
+        'tika',
+        metadata={'name': 'tika'},
+        spec={
+            'ports': [{'port': TIKA_PORT}],
+            'selector': tika_sts.spec.selector.match_labels,
+        },
+        opts=opts,
+    )
+
+
+def create_gotenberg(
+    component_config: ComponentConfig, opts: p.ResourceOptions
+) -> k8s.core.v1.Service:
+    app_labels_gotenberg = {'app': 'gotenberg'}
+    gotenberg_sts = k8s.apps.v1.Deployment(
+        'gotenberg',
+        metadata={'name': 'gotenberg'},
+        spec={
+            'replicas': 1,
+            'selector': {'match_labels': app_labels_gotenberg},
+            'template': {
+                'metadata': {'labels': app_labels_gotenberg},
+                'spec': {
+                    'containers': [
+                        {
+                            'name': 'gotenberg',
+                            'image': f'docker.io/gotenberg/gotenberg:{component_config.gotenberg.version}',
+                            # The gotenberg chromium route is used to convert .eml files. We do not
+                            # want to allow external content like tracking pixels or even javascript.
+                            'command': [
+                                'gotenberg',
+                                '--chromium-disable-javascript=true',
+                                '--chromium-allow-list=file:///tmp/.*',
+                            ],
+                            'ports': [{'container_port': GOTENBERG_PORT}],
+                        },
+                    ],
+                },
+            },
+        },
+        opts=opts,
+    )
+    return k8s.core.v1.Service(
+        'gotenberg',
+        metadata={'name': 'gotenberg'},
+        spec={
+            'ports': [{'port': GOTENBERG_PORT}],
+            'selector': gotenberg_sts.spec.selector.match_labels,
         },
         opts=opts,
     )
