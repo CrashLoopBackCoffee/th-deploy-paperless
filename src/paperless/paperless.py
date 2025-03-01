@@ -100,6 +100,7 @@ class Paperless(p.ComponentResource):
             'PAPERLESS_DBUSER': postgres_user.name,
             'PAPERLESS_CONSUMER_ENABLE_BARCODES': 'true',
             'PAPERLESS_CONSUMER_ENABLE_ASN_BARCODE': 'true',
+            'PAPERLESS_CONSUMER_BARCODE_SCANNER': 'ZXING',
             'PAPERLESS_TIKA_ENABLED': 'true',
             'PAPERLESS_TIKA_ENDPOINT': p.Output.format(
                 'http://{}:{}', tika_service.metadata.name, TIKA_PORT
