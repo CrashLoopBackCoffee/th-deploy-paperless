@@ -3,6 +3,6 @@
     "extends": [
         "config:recommended",
         ":dependencyDashboard",
-        "github>CrashLoopBackCoffee/th-deploy-base/renovate.json5"
+        "github>CrashLoopBackCoffee/th-deploy-base:renovate.json5"
     ]
 }
