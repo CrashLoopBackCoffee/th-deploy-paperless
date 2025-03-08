@@ -126,6 +126,7 @@ class Paperless(p.ComponentResource):
                 'http://{}:{}', gotenberg_service.metadata.name, GOTENBERG_PORT
             ),
             'PAPERLESS_GMAIL_OAUTH_CLIENT_ID': component_config.mail.client_id,
+            'PAPERLESS_WEBSERVER_WORKERS': '4',
         }
 
         config_secret = k8s.core.v1.Secret(
