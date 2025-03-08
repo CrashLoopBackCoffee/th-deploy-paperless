@@ -1,3 +1,5 @@
+import json
+
 import deploy_base.opnsense.unbound.host_override
 import pulumi as p
 import pulumi_kubernetes as k8s
@@ -101,6 +103,21 @@ class Paperless(p.ComponentResource):
             'PAPERLESS_CONSUMER_ENABLE_BARCODES': 'true',
             'PAPERLESS_CONSUMER_ENABLE_ASN_BARCODE': 'true',
             'PAPERLESS_CONSUMER_BARCODE_SCANNER': 'ZXING',
+            'PAPERLESS_CONSUMER_RECURSIVE': 'true',
+            'PAPERLESS_CONSUMER_IGNORE_PATTERNS': json.dumps(
+                [
+                    '._*',
+                    '.DS_Store',
+                    '.DS_STORE',
+                    '.localized/*',
+                    '.stfolder/*',
+                    '.stversions/*',
+                    '@eaDir/*',
+                    '#recycle/*',
+                    'desktop.ini',
+                    'Thumbs.db',
+                ]
+            ),
             'PAPERLESS_TIKA_ENABLED': 'true',
             'PAPERLESS_TIKA_ENDPOINT': p.Output.format(
                 'http://{}:{}', tika_service.metadata.name, TIKA_PORT
