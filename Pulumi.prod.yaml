@@ -15,6 +15,10 @@ config:
       client-id: 153248760938-p7v8p1m2vtvsj8ek8jc4qoubgjgdh8rs.apps.googleusercontent.com
       client-secret:
         secure: AAABAHNJhKTQyeUviwkgC8LH8PSe71ZlqYwrjjH978KnZeJhNdbgjTl+bBEnw5Gi/sLrULpnKnMv2sdCR5iBuMoffg==
+    mail:
+      client-id: 153248760938-k1ff8a6mta5k20l05keg46klsn32stue.apps.googleusercontent.com
+      client-secret:
+        secure: AAABADJWFhyDQEeCnOudImXSDQmZT38y5lHhkieOIOjtGGraR8TAtdHm7dCpP6yKeOuc8hmVzj91W4uj272+EbOsKQ==
     paperless:
       # renovate: datasource=github-releases packageName=paperless-ngx/paperless-ngx versioning=semver
       version: 2.14.7

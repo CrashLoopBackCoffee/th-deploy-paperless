@@ -107,6 +107,7 @@ class Paperless(p.ComponentResource):
             'PAPERLESS_TIKA_GOTENBERG_ENDPOINT': p.Output.format(
                 'http://{}:{}', gotenberg_service.metadata.name, GOTENBERG_PORT
             ),
+            'PAPERLESS_GMAIL_OAUTH_CLIENT_ID': component_config.mail.client_id,
         }
 
         config_secret = k8s.core.v1.Secret(
@@ -182,6 +183,7 @@ class Paperless(p.ComponentResource):
                     }
                 ),
                 'PAPERLESS_DBPASS': postgres_password.result,
+                'PAPERLESS_GMAIL_OAUTH_CLIENT_SECRET': str(component_config.mail.client_secret),
             },
             opts=k8s_opts,
         )

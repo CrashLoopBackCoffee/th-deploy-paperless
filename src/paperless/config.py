@@ -51,6 +51,11 @@ class PostgresConfig(deploy_base.model.LocalBaseModel):
     version: str
 
 
+class MailConfig(deploy_base.model.LocalBaseModel):
+    client_id: str
+    client_secret: str | PulumiSecret
+
+
 class PaperlessConfig(deploy_base.model.LocalBaseModel):
     version: str
 
@@ -68,6 +73,7 @@ class ComponentConfig(deploy_base.model.LocalBaseModel):
     redis: RedisConfig
     entraid: EntraIdConfig
     google: GoogleConfig
+    mail: MailConfig
     postgres: PostgresConfig
     tika: TikaConfig
     gotenberg: GotenbergConfig
